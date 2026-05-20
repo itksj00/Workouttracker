@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workout Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F5F5F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1A1A1A}
+.app{padding:16px;max-width:420px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.header h1{font-size:18px;font-weight:500}
+.date-str{font-size:13px;color:#888}
+.nav{display:flex;gap:6px;margin-bottom:20px}
+.nav button{flex:1;padding:8px 4px;font-size:12px;border-radius:8px;border:0.5px solid #D0D0D0;background:#fff;color:#888;cursor:pointer}
+.nav button.active{background:#1A1A1A;color:#fff;border-color:#1A1A1A}
+.section{margin-bottom:20px}
+.section-title{font-size:11px;font-weight:500;color:#AAA;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.stretch-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.stretch-btn{padding:11px 8px;font-size:13px;border-radius:8px;border:0.5px solid #E0E0E0;background:#fff;color:#888;cursor:pointer;text-align:center;transition:background .15s,border-color .15s,color .15s}
+.stretch-btn.selected{border-color:#185FA5;background:#E6F1FB;color:#0C447C}
+.exercise-card{background:#fff;border:0.5px solid #E0E0E0;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.exercise-name{font-size:14px;font-weight:500;margin-bottom:10px}
+.col-header{display:grid;grid-template-columns:24px 1fr 1fr 28px;gap:6px;margin-bottom:4px}
+.col-lbl{font-size:11px;color:#AAA;text-align:center}
+.set-row{display:grid;grid-template-columns:24px 1fr 1fr 28px;gap:6px;align-items:center;margin-bottom:6px}
+.set-label{font-size:12px;color:#AAA;text-align:center}
+.set-input{width:100%;padding:6px 8px;font-size:13px;border-radius:8px;border:0.5px solid #E0E0E0;background:#F5F5F5;color:#1A1A1A;text-align:center}
+.set-input:focus{outline:none;border-color:#1A1A1A}
+.del-btn{width:28px;height:28px;border-radius:8px;border:0.5px solid #E0E0E0;background:#fff;color:#AAA;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1}
+.add-set-btn{width:100%;padding:7px;font-size:12px;border-radius:8px;border:0.5px dashed #D0D0D0;background:transparent;color:#888;cursor:pointer;margin-top:4px}
+.save-btn{width:100%;padding:13px;font-size:15px;font-weight:500;border-radius:12px;border:none;background:#1A1A1A;color:#fff;cursor:pointer;margin-top:8px}
+.history-item{background:#fff;border:0.5px solid #E0E0E0;border-radius:12px;padding:12px 14px;margin-bottom:10px;cursor:pointer}
+.history-date{font-size:14px;font-weight:500}
+.history-meta{font-size:12px;color:#888;margin-top:4px}
+.history-detail{margin-top:10px;border-top:0.5px solid #E0E0E0;padding-top:10px;display:none}
+.history-detail.open{display:block}
+.detail-ex{font-size:13px;color:#888;margin-bottom:4px}
+.detail-set{font-size:12px;color:#AAA;margin-left:8px;margin-bottom:2px}
+.empty{text-align:center;padding:40px 20px;color:#AAA;font-size:14px}
+.month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.month-nav button{padding:6px 14px;font-size:13px;border-radius:8px;border:0.5px solid #D0D0D0;background:#fff;color:#888;cursor:pointer}
+.month-title{font-size:15px;font-weight:500}
+.filter-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filter-btn{padding:5px 10px;font-size:12px;border-radius:8px;border:0.5px solid #E0E0E0;background:#fff;color:#888;cursor:pointer;white-space:nowrap}
+.filter-btn.on{background:#1A1A1A;color:#fff;border-color:#1A1A1A}
+.stretch-count-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:0.5px solid #F0F0F0}
+.stretch-count-row:last-child{border-bottom:none}
+.stretch-count-name{font-size:13px;color:#888;min-width:100px}
+.stretch-count-val{font-size:14px;font-weight:500;min-width:24px;text-align:right}
+.stretch-bar-bg{flex:1;height:4px;background:#F0F0F0;border-radius:2px;margin:0 12px}
+.stretch-bar-fill{height:4px;background:#378ADD;border-radius:2px;transition:width .3s}
+.pr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pr-card{background:#F5F5F5;border-radius:8px;padding:10px 12px}
+.pr-name{font-size:11px;color:#888;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr-val{font-size:20px;font-weight:500}
+.pr-up{color:#0F6E56;font-size:11px;font-weight:500;margin-top:2px}
+.pr-down{color:#A32D2D;font-size:11px;margin-top:2px}
+.pr-same{color:#AAA;font-size:11px;margin-top:2px}
+.backup-row{display:flex;gap:8px;margin-top:12px}
+.backup-btn{flex:1;padding:9px;font-size:12px;border-radius:8px;border:0.5px solid #D0D0D0;background:#fff;color:#888;cursor:pointer}
+.toast-bar{background:#1A1A1A;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;text-align:center;margin-top:12px;display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>Workout</h1>
+    <span class="date-str" id="todayStr"></span>
+  </div>
+  <div class="nav">
+    <button class="active" id="nav-log" onclick="switchTab('log')">Log</button>
+    <button id="nav-history" onclick="switchTab('history')">History</button>
+    <button id="nav-stats" onclick="switchTab('stats')">Stats</button>
+  </div>
+
+  <div id="tab-log">
+    <div class="section">
+      <div class="section-title">Stretching</div>
+      <div class="stretch-grid" id="stretchGrid"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Legs</div>
+      <div id="legs-cards"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Chest</div>
+      <div id="chest-cards"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Back</div>
+      <div id="back-cards"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Running</div>
+      <div class="exercise-card">
+        <div class="col-header">
+          <div></div>
+          <div class="col-lbl">Speed (km/h)</div>
+          <div class="col-lbl">Duration (min)</div>
+          <div></div>
+        </div>
+        <div id="run-rows"></div>
+        <button class="add-set-btn" id="addRunBtn">+ Add interval</button>
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveWorkout()">Save workout</button>
+    <div class="backup-row">
+      <button class="backup-btn" onclick="exportData()">↓ Export backup</button>
+      <button class="backup-btn" onclick="document.getElementById('importFile').click()">↑ Import backup</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+    <div class="toast-bar" id="toast"></div>
+  </div>
+
+  <div id="tab-history" style="display:none">
+    <div id="historyList"></div>
+  </div>
+
+  <div id="tab-stats" style="display:none">
+    <div class="month-nav">
+      <button id="prevMonth">&#8249;</button>
+      <span class="month-title" id="monthTitle"></span>
+      <button id="nextMonth">&#8250;</button>
+    </div>
+    <div class="section">
+      <div class="section-title">Max weight trend (kg)</div>
+      <div class="filter-wrap" id="filterWrap"></div>
+      <div style="position:relative;width:100%;height:260px;margin-bottom:8px">
+        <canvas id="trendChart"></canvas>
+      </div>
+      <div style="position:relative;width:100%;height:150px">
+        <canvas id="runTrendChart"></canvas>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Stretching this month</div>
+      <div class="exercise-card" style="padding:4px 14px">
+        <div id="stretchCountList"></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Personal records</div>
+      <div class="pr-grid" id="prGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const STRETCHES=['PI (Shoulders)','PI (Spine)','PI (Pelvis)','PI (Neck)','PI (Legs)'];
+const EXERCISES={legs:['Leg Press','Leg Curl','Leg Extension','Calf Raise'],chest:['Bench Press','Machine Chest Fly'],back:['Seated Cable Rows','Pull-up']};
+const ALL_EX=['Leg Press','Leg Curl','Leg Extension','Calf Raise','Bench Press','Machine Chest Fly','Seated Cable Rows','Pull-up'];
+const EX_COLORS={'Leg Press':'#378ADD','Leg Curl':'#185FA5','Leg Extension':'#85B7EB','Calf Raise':'#B5D4F4','Bench Press':'#D85A30','Machine Chest Fly':'#F0997B','Seated Cable Rows':'#1D9E75','Pull-up':'#0F6E56'};
+const EX_DASH={'Leg Press':[],'Leg Curl':[5,3],'Leg Extension':[2,2],'Calf Raise':[8,3],'Bench Press':[],'Machine Chest Fly':[5,3],'Seated Cable Rows':[],'Pull-up':[5,3]};
+
+let selectedStretch=null;
+let statsMonth=new Date();
+let activeFilters=new Set(ALL_EX);
+let trendChartInst=null,runTrendInst=null;
+
+function today(){return new Date().toISOString().slice(0,10)}
+
+function initStretch(){
+  const g=document.getElementById('stretchGrid');
+  g.innerHTML='';
+  STRETCHES.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='stretch-btn'+(selectedStretch===s?' selected':'');
+    b.textContent=s;
+    b.addEventListener('click',()=>{
+      selectedStretch=s;
+      document.querySelectorAll('.stretch-btn').forEach(btn=>btn.classList.toggle('selected',btn.textContent===s));
+    });
+    g.appendChild(b);
+  });
+}
+
+function buildExCard(name,groupId){
+  const key=name.replace(/[\s()]/g,'_');
+  const card=document.createElement('div');
+  card.className='exercise-card';
+  card.innerHTML=`<div class="exercise-name">${name}</div>
+    <div class="col-header"><div></div><div class="col-lbl">Weight (kg)</div><div class="col-lbl">Reps</div><div></div></div>
+    <div id="sets-${key}"></div>
+    <button class="add-set-btn" data-key="${key}">+ Add set</button>`;
+  card.querySelector('.add-set-btn').addEventListener('click',()=>addSet(key));
+  document.getElementById(groupId).appendChild(card);
+  addSet(key);
+}
+
+function addSet(key){
+  const container=document.getElementById('sets-'+key);
+  const idx=container.children.length+1;
+  const row=document.createElement('div');
+  row.className='set-row';
+  row.innerHTML=`<div class="set-label">${idx}</div>
+    <input class="set-input" type="number" placeholder="kg" min="0" step="0.5">
+    <input class="set-input" type="number" placeholder="reps" min="0" step="1">
+    <button class="del-btn" aria-label="Delete set">&#215;</button>`;
+  row.querySelector('.del-btn').addEventListener('click',()=>{
+    row.remove();
+    Array.from(container.children).forEach((r,i)=>r.querySelector('.set-label').textContent=i+1);
+  });
+  container.appendChild(row);
+}
+
+function addRunRow(){
+  const container=document.getElementById('run-rows');
+  const idx=container.children.length+1;
+  const row=document.createElement('div');
+  row.className='set-row';
+  row.innerHTML=`<div class="set-label">${idx}</div>
+    <input class="set-input" type="number" placeholder="km/h" min="0" step="0.5">
+    <input class="set-input" type="number" placeholder="min" min="0" step="0.5">
+    <button class="del-btn" aria-label="Delete interval">&#215;</button>`;
+  row.querySelector('.del-btn').addEventListener('click',()=>{
+    row.remove();
+    Array.from(container.children).forEach((r,i)=>r.querySelector('.set-label').textContent=i+1);
+  });
+  container.appendChild(row);
+}
+
+function collectSets(key){
+  const rows=document.querySelectorAll(`#sets-${key} .set-row`);
+  const sets=[];
+  rows.forEach(r=>{
+    const inp=r.querySelectorAll('input');
+    if(inp[0].value||inp[1].value) sets.push({weight:parseFloat(inp[0].value)||0,reps:parseFloat(inp[1].value)||0});
+  });
+  return sets;
+}
+
+function collectRunning(){
+  const rows=document.querySelectorAll('#run-rows .set-row');
+  const intervals=[];
+  rows.forEach(r=>{
+    const inp=r.querySelectorAll('input');
+    if(inp[0].value||inp[1].value) intervals.push({speed:parseFloat(inp[0].value)||0,duration:parseFloat(inp[1].value)||0});
+  });
+  return intervals;
+}
+
+function saveWorkout(){
+  const date=today();
+  const data={date,stretching:selectedStretch,exercises:{},running:collectRunning()};
+  ['legs','chest','back'].forEach(g=>{
+    EXERCISES[g].forEach(ex=>{
+      const key=ex.replace(/[\s()]/g,'_');
+      data.exercises[ex]=collectSets(key);
+    });
+  });
+  const stored=JSON.parse(localStorage.getItem('workoutLogs')||'[]');
+  const idx=stored.findIndex(w=>w.date===date);
+  if(idx>=0) stored[idx]=data; else stored.unshift(data);
+  localStorage.setItem('workoutLogs',JSON.stringify(stored));
+  showToast('Saved!');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>t.style.display='none',2000);
+}
+
+function switchTab(tab){
+  ['log','history','stats'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display=t===tab?'':'none';
+    document.getElementById('nav-'+t).classList.toggle('active',t===tab);
+  });
+  if(tab==='history') renderHistory();
+  if(tab==='stats') renderStats();
+}
+
+function renderHistory(){
+  const stored=JSON.parse(localStorage.getItem('workoutLogs')||'[]');
+  const list=document.getElementById('historyList');
+  if(!stored.length){list.innerHTML='<div class="empty">No workouts yet.</div>';return}
+  list.innerHTML='';
+  stored.forEach((w,idx)=>{
+    const totalSets=Object.values(w.exercises).reduce((a,s)=>a+s.length,0);
+    const item=document.createElement('div');
+    item.className='history-item';
+    item.innerHTML=`<div class="history-date">${w.date}</div>
+      <div class="history-meta">${w.stretching||'—'} · ${totalSets} sets · ${(w.running||[]).length} intervals</div>
+      <div class="history-detail" id="detail-${idx}"></div>`;
+    item.addEventListener('click',()=>toggleDetail(w,idx));
+    list.appendChild(item);
+  });
+}
+
+function toggleDetail(w,idx){
+  const d=document.getElementById('detail-'+idx);
+  if(d.classList.contains('open')){d.classList.remove('open');return}
+  let html='';
+  Object.entries(w.exercises).forEach(([ex,sets])=>{
+    if(!sets.length) return;
+    html+=`<div class="detail-ex">${ex}</div>`;
+    sets.forEach((s,i)=>{html+=`<div class="detail-set">Set ${i+1}: ${s.weight||'—'}kg × ${s.reps||'—'}</div>`});
+  });
+  if(w.running&&w.running.length){
+    html+=`<div class="detail-ex" style="margin-top:8px">Running</div>`;
+    w.running.forEach((r,i)=>{html+=`<div class="detail-set">Interval ${i+1}: ${r.speed} km/h × ${r.duration} min</div>`});
+  }
+  d.innerHTML=html;d.classList.add('open');
+}
+
+function getMonthLogs(){
+  const stored=JSON.parse(localStorage.getItem('workoutLogs')||'[]');
+  const ms=`${statsMonth.getFullYear()}-${String(statsMonth.getMonth()+1).padStart(2,'0')}`;
+  return stored.filter(w=>w.date.startsWith(ms)).sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function getPrevMonthLogs(){
+  const stored=JSON.parse(localStorage.getItem('workoutLogs')||'[]');
+  const prev=new Date(statsMonth.getFullYear(),statsMonth.getMonth()-1,1);
+  const ms=`${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+  return stored.filter(w=>w.date.startsWith(ms));
+}
+
+function maxWeightForEx(logs,ex){
+  let max=0;
+  logs.forEach(w=>{(w.exercises[ex]||[]).forEach(s=>{if(s.weight>max) max=s.weight})});
+  return max;
+}
+
+function renderStats(){
+  document.getElementById('monthTitle').textContent=statsMonth.toLocaleDateString('en',{year:'numeric',month:'long'});
+  const logs=getMonthLogs();
+  const prevLogs=getPrevMonthLogs();
+  buildFilterButtons();
+  renderTrendChart(logs);
+  renderRunChart(logs);
+  renderStretchCounts(logs);
+  renderPRCards(logs,prevLogs);
+}
+
+function renderStretchCounts(logs){
+  const counts={};
+  STRETCHES.forEach(s=>counts[s]=0);
+  logs.forEach(w=>{if(w.stretching&&counts[w.stretching]!==undefined) counts[w.stretching]++});
+  const max=Math.max(...Object.values(counts),1);
+  const list=document.getElementById('stretchCountList');
+  list.innerHTML='';
+  STRETCHES.forEach(s=>{
+    const row=document.createElement('div');
+    row.className='stretch-count-row';
+    const pct=Math.round((counts[s]/max)*100);
+    row.innerHTML=`<span class="stretch-count-name">${s}</span>
+      <div class="stretch-bar-bg"><div class="stretch-bar-fill" style="width:${pct}%"></div></div>
+      <span class="stretch-count-val">${counts[s]}</span>`;
+    list.appendChild(row);
+  });
+}
+
+function renderPRCards(logs,prevLogs){
+  const prGrid=document.getElementById('prGrid');
+  prGrid.innerHTML='';
+  ALL_EX.forEach(ex=>{
+    const cur=maxWeightForEx(logs,ex);
+    const prev=maxWeightForEx(prevLogs,ex);
+    const diff=parseFloat((cur-prev).toFixed(1));
+    let diffHtml='';
+    if(cur===0) diffHtml=`<div class="pr-same">no data</div>`;
+    else if(prev===0) diffHtml=`<div class="pr-same">first month</div>`;
+    else if(diff>0) diffHtml=`<div class="pr-up">+${diff} kg vs last month</div>`;
+    else if(diff<0) diffHtml=`<div class="pr-down">${diff} kg vs last month</div>`;
+    else diffHtml=`<div class="pr-same">same as last month</div>`;
+    const card=document.createElement('div');
+    card.className='pr-card';
+    card.innerHTML=`<div class="pr-name">${ex}</div><div class="pr-val">${cur>0?cur+' kg':'—'}</div>${diffHtml}`;
+    prGrid.appendChild(card);
+  });
+}
+
+function buildFilterButtons(){
+  const wrap=document.getElementById('filterWrap');
+  wrap.innerHTML='';
+  ALL_EX.forEach(ex=>{
+    const btn=document.createElement('button');
+    btn.className='filter-btn'+(activeFilters.has(ex)?' on':'');
+    btn.textContent=ex;
+    btn.addEventListener('click',()=>{
+      if(activeFilters.has(ex)) activeFilters.delete(ex); else activeFilters.add(ex);
+      btn.classList.toggle('on',activeFilters.has(ex));
+      renderTrendChart(getMonthLogs());
+    });
+    wrap.appendChild(btn);
+  });
+}
+
+function renderTrendChart(logs){
+  const labels=[...new Set(logs.map(w=>w.date))].sort();
+  const shortLabels=labels.map(d=>{const p=d.split('-');return p[1]+'/'+p[2]});
+  const datasets=ALL_EX.filter(ex=>activeFilters.has(ex)).map(ex=>({
+    label:ex,
+    data:labels.map(date=>{
+      const w=logs.find(l=>l.date===date);
+      if(!w) return null;
+      const sets=w.exercises[ex]||[];
+      if(!sets.length) return null;
+      const max=Math.max(...sets.map(s=>s.weight||0));
+      return max>0?max:null;
+    }),
+    borderColor:EX_COLORS[ex],
+    backgroundColor:EX_COLORS[ex]+'22',
+    borderDash:EX_DASH[ex],
+    borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:0.3,spanGaps:true
+  }));
+  if(trendChartInst) trendChartInst.destroy();
+  trendChartInst=new Chart(document.getElementById('trendChart'),{
+    type:'line',
+    data:{labels:shortLabels,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y} kg`}}},
+      scales:{
+        x:{ticks:{font:{size:11},autoSkip:true,maxRotation:45},grid:{display:false}},
+        y:{ticks:{font:{size:11},callback:v=>v+'kg'},grid:{color:'rgba(0,0,0,0.05)'}}
+      }
+    }
+  });
+}
+
+function renderRunChart(logs){
+  const withRun=logs.filter(w=>w.running&&w.running.length);
+  const labels=withRun.map(w=>{const p=w.date.split('-');return p[1]+'/'+p[2]});
+  const data=withRun.map(w=>parseFloat(Math.max(...w.running.map(r=>r.speed||0)).toFixed(1)));
+  if(runTrendInst) runTrendInst.destroy();
+  runTrendInst=new Chart(document.getElementById('runTrendChart'),{
+    type:'line',
+    data:{labels,datasets:[{label:'Max speed',data,borderColor:'#888',backgroundColor:'#88888822',borderWidth:2,pointRadius:3,tension:0.3}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} km/h`}}},
+      scales:{
+        x:{ticks:{font:{size:11},autoSkip:true,maxRotation:45},grid:{display:false}},
+        y:{ticks:{font:{size:11},callback:v=>v+' km/h'},grid:{color:'rgba(0,0,0,0.05)'}}
+      }
+    }
+  });
+}
+
+function exportData(){
+  const data=localStorage.getItem('workoutLogs')||'[]';
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`workout-backup-${today()}.json`;a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('importFile').addEventListener('change',e=>{
+  const file=e.target.files[0];if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(!Array.isArray(parsed)) throw new Error();
+      localStorage.setItem('workoutLogs',JSON.stringify(parsed));
+      showToast('Imported '+parsed.length+' workouts');
+    }catch{showToast('Import failed')}
+  };
+  reader.readAsText(file);e.target.value='';
+});
+
+document.getElementById('prevMonth').addEventListener('click',()=>{
+  statsMonth=new Date(statsMonth.getFullYear(),statsMonth.getMonth()-1,1);
+  renderStats();
+});
+document.getElementById('nextMonth').addEventListener('click',()=>{
+  statsMonth=new Date(statsMonth.getFullYear(),statsMonth.getMonth()+1,1);
+  renderStats();
+});
+document.getElementById('addRunBtn').addEventListener('click',addRunRow);
+
+document.getElementById('todayStr').textContent=today();
+initStretch();
+['legs','chest','back'].forEach(g=>EXERCISES[g].forEach(ex=>buildExCard(ex,g+'-cards')));
+addRunRow();
+</script>
+</body>
+</html>
